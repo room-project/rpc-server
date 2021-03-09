@@ -1,4 +1,4 @@
-import { createEvent } from 'effector'
+import { createEvent, createEffect } from 'effector'
 import express, { Response } from 'express'
 import cors, { CorsOptions } from 'cors'
 import http from 'http'
@@ -50,13 +50,17 @@ export const RpcServerHttpTransportFactory: IRpcServerHttpTransportFactory = (op
 
   const server = http.createServer(app)
 
-  const open = async () => {
-    server.listen(options.port)
-  }
+  const open = createEffect('open', {
+    handler: async () => {
+      server.listen(options.port)
+    },
+  })
 
-  const close = async () => {
-    server.close()
-  }
+  const close = createEffect('close', {
+    handler: async () => {
+      server.close()
+    },
+  })
 
   const receive = createEvent<IRpcRequest>('receive')
   const send = createEvent<IRpcResponse>('send')
