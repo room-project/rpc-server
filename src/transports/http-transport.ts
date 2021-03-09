@@ -38,7 +38,7 @@ export const RpcServerHttpTransportFactory: IRpcServerHttpTransportFactory = (op
         ...options.cors,
       })
     )
-    .post('/', async function handler(req, res) {
+    .post('/', async (req, res) => {
       try {
         const request = parseRequest(req.body)
         queue.set(request.id, res)
@@ -50,17 +50,8 @@ export const RpcServerHttpTransportFactory: IRpcServerHttpTransportFactory = (op
 
   const server = http.createServer(app)
 
-  const open = createEffect('open', {
-    handler: async () => {
-      server.listen(options.port)
-    },
-  })
-
-  const close = createEffect('close', {
-    handler: async () => {
-      server.close()
-    },
-  })
+  const open = createEffect<void, void>('open')
+  const close = createEffect<void, void>('close')
 
   const receive = createEvent<IRpcRequest>('receive')
   const send = createEvent<IRpcResponse>('send')
@@ -73,7 +64,15 @@ export const RpcServerHttpTransportFactory: IRpcServerHttpTransportFactory = (op
     }
   })
 
-  const transport = {
+  open.use(async () => {
+    server.listen(options.port)
+  })
+
+  close.use(async () => {
+    server.close()
+  })
+
+  const transport: IRpcServerTransport = {
     receive,
     send,
     open,
