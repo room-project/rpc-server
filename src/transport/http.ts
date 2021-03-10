@@ -1,43 +1,35 @@
 import { createEvent, createEffect, Effect } from 'effector'
-import express, { Response } from 'express'
+import express, { Response as ExpressResponse } from 'express'
 import cors, { CorsOptions } from 'cors'
 import http from 'http'
-import {
-  IRpcServerTransport,
-  IRpcRequest,
-  IRpcResponse,
-  RpcMessageId,
-} from '@room-project/rpc-core'
+import { IRpcRequest, IRpcResponse, RpcMessageId } from '@room-project/rpc-core'
+import { IRpcServerTransport } from '../transport'
 
 export interface IRpcServerHttpTransportOptions {
   port: number
   cors?: CorsOptions
 }
 
-export interface IRpcServerHttpTransportFactory {
-  (options: IRpcServerHttpTransportOptions): IRpcServerTransport
-  of: IRpcServerHttpTransportFactory
+export interface IRpcServerHttpTransport extends IRpcServerTransport {
+  open: Effect<void, void>
+  close: Effect<void, void>
 }
 
-export type RpcServerHttpTransportOpen = Effect<void, void>
-export type RpcServerHttpTransportClose = Effect<void, void>
-
-export interface IRpcServerHttpTransport extends IRpcServerTransport {
-  open: RpcServerHttpTransportOpen
-  close: RpcServerHttpTransportClose
+export interface IRpcServerHttpTransportFactory {
+  (options: IRpcServerHttpTransportOptions): IRpcServerHttpTransport
+  of: IRpcServerHttpTransportFactory
 }
 
 const parseRequest = (data: string): IRpcRequest => {
   try {
-    const payload = JSON.parse(data)
-    return payload
+    return JSON.parse(data)
   } catch (error) {
     throw new Error(`Invalid request format`)
   }
 }
 
 export const RpcServerHttpTransportFactory: IRpcServerHttpTransportFactory = (options) => {
-  const queue = new Map<RpcMessageId, Response>()
+  const queue = new Map<RpcMessageId, ExpressResponse>()
 
   const app = express()
     .use(
@@ -58,8 +50,8 @@ export const RpcServerHttpTransportFactory: IRpcServerHttpTransportFactory = (op
 
   const server = http.createServer(app)
 
-  const open = createEffect('open') as RpcServerHttpTransportOpen
-  const close = createEffect('close') as RpcServerHttpTransportClose
+  const open = createEffect<void, void>('open')
+  const close = createEffect<void, void>('close')
 
   const receive = createEvent<IRpcRequest>('receive')
   const send = createEvent<IRpcResponse>('send')
@@ -72,12 +64,27 @@ export const RpcServerHttpTransportFactory: IRpcServerHttpTransportFactory = (op
     }
   })
 
-  open.use(async () => {
-    server.listen(options.port)
+  open.use(() => {
+    return new Promise((accept, reject) => {
+      server.once('listening', () => accept())
+      server.once('error', (error) => reject(error))
+      server.listen(options.port)
+    })
   })
 
-  close.use(async () => {
-    server.close()
+  close.use(() => {
+    return new Promise((accept) => {
+      server.once('close', () => accept())
+      server.close()
+    })
+  })
+
+  open.done.watch(() => {
+    console.log(`rpc-server, HTTP transport started on port: ${options.port}`)
+  })
+
+  close.done.watch(() => {
+    console.log(`rpc-server, HTTP transport closed`)
   })
 
   const transport: IRpcServerHttpTransport = {
