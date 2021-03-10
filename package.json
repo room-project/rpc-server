@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/room-project/rpc-server#readme",
   "dependencies": {
-    "@room-project/rpc-core": "0.5.1",
+    "@room-project/rpc-core": "0.5.2",
     "cors": "2.8.5",
     "effector": "21.8.5",
     "express": "4.17.1"
