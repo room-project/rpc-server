@@ -1,4 +1,4 @@
-import { createEvent, createEffect, Effect } from 'effector'
+import { createEvent, createStore, createEffect, Effect } from 'effector'
 import express, { Response as ExpressResponse } from 'express'
 import cors, { CorsOptions } from 'cors'
 import http from 'http'
@@ -32,6 +32,7 @@ export const RpcServerHttpTransportFactory: IRpcServerHttpTransportFactory = (op
   const queue = new Map<RpcMessageId, ExpressResponse>()
 
   const app = express()
+    .disable('x-powered-by')
     .use(
       cors({
         origin: '*',
@@ -49,6 +50,7 @@ export const RpcServerHttpTransportFactory: IRpcServerHttpTransportFactory = (op
     })
 
   const server = http.createServer(app)
+  const alive = createStore<boolean>(false)
 
   const open = createEffect<void, void>('open')
   const close = createEffect<void, void>('close')
@@ -80,14 +82,17 @@ export const RpcServerHttpTransportFactory: IRpcServerHttpTransportFactory = (op
   })
 
   open.done.watch(() => {
-    console.log(`rpc-server, HTTP transport started on port: ${options.port}`)
+    console.log(`rpc-server, HTTP transport listening on port: ${options.port}`)
   })
 
   close.done.watch(() => {
     console.log(`rpc-server, HTTP transport closed`)
   })
 
+  alive.on(open.done, () => true).reset(close.done)
+
   const transport: IRpcServerHttpTransport = {
+    alive,
     receive,
     send,
     open,
