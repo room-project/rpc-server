@@ -1,4 +1,4 @@
-import { createEvent, createEffect } from 'effector'
+import { createEvent, createEffect, Effect } from 'effector'
 import express, { Response } from 'express'
 import cors, { CorsOptions } from 'cors'
 import http from 'http'
@@ -17,6 +17,14 @@ export interface IRpcServerHttpTransportOptions {
 export interface IRpcServerHttpTransportFactory {
   (options: IRpcServerHttpTransportOptions): IRpcServerTransport
   of: IRpcServerHttpTransportFactory
+}
+
+export type RpcServerHttpTransportOpen = Effect<void, void>
+export type RpcServerHttpTransportClose = Effect<void, void>
+
+export interface IRpcServerHttpTransport extends IRpcServerTransport {
+  open: RpcServerHttpTransportOpen
+  close: RpcServerHttpTransportClose
 }
 
 const parseRequest = (data: string): IRpcRequest => {
@@ -50,8 +58,8 @@ export const RpcServerHttpTransportFactory: IRpcServerHttpTransportFactory = (op
 
   const server = http.createServer(app)
 
-  const open = createEffect<void, void>('open')
-  const close = createEffect<void, void>('close')
+  const open = createEffect('open') as RpcServerHttpTransportOpen
+  const close = createEffect('close') as RpcServerHttpTransportClose
 
   const receive = createEvent<IRpcRequest>('receive')
   const send = createEvent<IRpcResponse>('send')
@@ -72,7 +80,7 @@ export const RpcServerHttpTransportFactory: IRpcServerHttpTransportFactory = (op
     server.close()
   })
 
-  const transport: IRpcServerTransport = {
+  const transport: IRpcServerHttpTransport = {
     receive,
     send,
     open,
