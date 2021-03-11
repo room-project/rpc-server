@@ -16,10 +16,7 @@ const plugins = [
   terser({ output: { comments: false } }),
 ]
 
-const external = [
-  'express',
-  'cors'
-]
+const external = [...Object.keys(pkg.dependencies), ...Object.keys(pkg.peerDependencies)]
 
 export default [
   {
@@ -30,7 +27,7 @@ export default [
       sourcemap: true,
     },
     plugins,
-    external
+    external,
   },
   {
     input,
@@ -40,6 +37,6 @@ export default [
       sourcemap: true,
     },
     plugins,
-    external
+    external,
   },
 ]
