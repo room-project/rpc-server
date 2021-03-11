@@ -91,7 +91,7 @@ export const RpcServerHttpTransportFactory: IRpcServerHttpTransportFactory = (op
 
   alive.on(open.done, () => true).reset(close.done)
 
-  const transport: IRpcServerHttpTransport = {
+  const transport = {
     alive,
     receive,
     send,

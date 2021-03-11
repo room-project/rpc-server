@@ -5,6 +5,6 @@ export interface IRpcServerTransport {
   readonly alive: Store<boolean>
   readonly receive: Event<IRpcRequest>
   readonly send: Event<IRpcResponse>
-  readonly open: Effect<void | any, void | any>
-  readonly close: Effect<void | any, void | any>
+  readonly open: Effect<any, any>
+  readonly close: Effect<any, any>
 }

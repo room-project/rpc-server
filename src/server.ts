@@ -1,5 +1,9 @@
+import { version } from '../package.json'
+
 import { IRpcService, IRpcResponse } from '@room-project/rpc-core'
 import { IRpcServerTransport } from './transport'
+
+export const VERSION = version
 
 export interface IRpcServer<S extends IRpcService, T extends IRpcServerTransport> {
   readonly service: S
@@ -42,6 +46,7 @@ export const RpcServerFactory: IRpcServerFactory = ({ service, transport }) => {
   })
 
   transport.open.watch(() => {
+    console.log(`rpc-server, version: ${VERSION}`)
     console.log(`rpc-server, starting...`)
   })
 
